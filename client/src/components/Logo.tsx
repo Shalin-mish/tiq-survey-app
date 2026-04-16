@@ -1,26 +1,26 @@
 export default function Logo() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <div style={{
-        width: '34px', height: '34px',
-        border: '1.5px solid var(--copper)',
-        borderRadius: '8px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: '11px', fontWeight: 600,
-        letterSpacing: '-0.5px',
-        color: 'var(--copper)',
-        flexShrink: 0,
-      }}>
-        TIQ
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {/* Copper indicator dot — matches tiq_workplace */}
+      <span style={{
+        width: '7px', height: '7px', borderRadius: '50%',
+        background: 'var(--copper)', flexShrink: 0,
+        display: 'inline-block',
+      }} />
+      {/* Favicon */}
+      <img
+        src="/custom-favicon.png"
+        alt="TIQ"
+        style={{ height: '26px', objectFit: 'contain', flexShrink: 0 }}
+      />
+      {/* Wordmark */}
       <span style={{
         fontFamily: "'Space Grotesk', sans-serif",
-        fontSize: '15px', fontWeight: 600,
-        letterSpacing: '0.3px',
-        color: 'var(--text)',
+        fontSize: '15px', fontWeight: 700,
+        letterSpacing: '-0.2px', lineHeight: 1,
       }}>
-        TIQ World
+        <span style={{ color: 'var(--copper)' }}>TIQ</span>
+        <span style={{ color: 'var(--text)' }}> World</span>
       </span>
     </div>
   )

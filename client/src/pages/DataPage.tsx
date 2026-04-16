@@ -219,17 +219,21 @@ export default function DataPage() {
 
   if (token) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <nav style={{
-        height: '64px', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 40px', borderBottom: '1px solid var(--border-color)',
-      }}>
-        <Logo />
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--copper)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-          Admin View
-        </span>
-      </nav>
-      <AdminDashboard token={token} onLogout={handleLogout} />
+      <header className="app-nav-header">
+        <div className="app-nav-pill">
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+            background: 'linear-gradient(90deg, transparent, hsl(25 85% 58% / 0.45), transparent)',
+          }} />
+          <Logo />
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--copper)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            Admin View
+          </span>
+        </div>
+      </header>
+      <div style={{ paddingTop: '70px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <AdminDashboard token={token} onLogout={handleLogout} />
+      </div>
     </div>
   )
 
