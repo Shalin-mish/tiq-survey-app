@@ -52,69 +52,58 @@ function StepIndicator({ step }: { step: Step }) {
   const labels = ['Identity', 'Challenges', 'Details']
   return (
     <div style={{
-      padding: '12px 24px 10px',
+      padding: '14px 24px 12px',
       borderBottom: '1px solid var(--border-color)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
       flexShrink: 0,
     }}>
-      {/* Dots row with connected lines */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+      {/*
+        Lines are absolutely positioned behind the circles.
+        Layer spans from center of circle 1 to center of circle 3.
+        Spacer in the middle covers circle 2, so lines butt up to circle edges — no gap.
+      */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Absolute line layer */}
+        <div style={{ position: 'absolute', top: '11px', left: '12px', right: '12px', display: 'flex', pointerEvents: 'none' }}>
+          <div style={{ flex: 1, height: '1px', background: step > 1 ? 'var(--copper)' : 'hsl(217 14% 28%)', opacity: step > 1 ? 0.6 : 0.35, transition: 'background 0.3s ease' }} />
+          <div style={{ width: '24px' }} />
+          <div style={{ flex: 1, height: '1px', background: step > 2 ? 'var(--copper)' : 'hsl(217 14% 28%)', opacity: step > 2 ? 0.6 : 0.35, transition: 'background 0.3s ease' }} />
+        </div>
+        {/* Circles + labels */}
         {labels.map((label, i) => {
-          const s      = i + 1
-          const active = s === step
-          const done   = s < step
+          const s = i + 1; const active = s === step; const done = s < step
           return (
-            <Fragment key={s}>
-              {/* Connector line — placed before each step except the first */}
-              {i > 0 && (
-                <div style={{
-                  flex: 1, height: '1px', marginTop: '12px',
-                  background: i < step ? 'var(--copper)' : 'hsl(217 14% 28%)',
-                  opacity: i < step ? 0.55 : 0.35,
-                  transition: 'background 0.3s ease',
-                }} />
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                <div style={{
-                  width: '26px', height: '26px', borderRadius: '50%',
-                  border: `1.5px solid ${done || active ? 'var(--copper)' : 'hsl(217 14% 32%)'}`,
-                  background: done ? 'var(--copper)' : active ? 'hsl(25 85% 58% / 0.12)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'border-color 0.3s ease, background 0.3s ease',
-                }}>
-                  {done ? (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path d="M1.5 5l2.5 2.5 4.5-5" stroke="hsl(217,24%,8%)" strokeWidth="1.7"
-                        strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  ) : (
-                    <span style={{
-                      fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', fontWeight: 700,
-                      color: active ? 'var(--copper)' : 'var(--text-dim)', transition: 'color 0.3s ease',
-                    }}>{s}</span>
-                  )}
-                </div>
-                <span style={{
-                  fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
-                  letterSpacing: '0.4px', textTransform: 'uppercase',
-                  color: active ? 'var(--copper)' : done ? 'var(--text-muted)' : 'var(--text-dim)',
-                  transition: 'color 0.3s ease',
-                }}>
-                  {label}
-                </span>
+            <div key={s} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', position: 'relative', zIndex: 1 }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '50%',
+                border: `1.5px solid ${done || active ? 'var(--copper)' : 'hsl(217 14% 32%)'}`,
+                background: done ? 'var(--copper)' : active ? 'hsl(25 85% 58% / 0.12)' : 'hsl(217 18% 15%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'border-color 0.3s ease, background 0.3s ease',
+              }}>
+                {done ? (
+                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                    <path d="M1.5 5l2.5 2.5 4.5-5" stroke="hsl(217,24%,8%)" strokeWidth="1.7"
+                      strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', fontWeight: 700,
+                    color: active ? 'var(--copper)' : 'var(--text-dim)', transition: 'color 0.3s ease',
+                  }}>{s}</span>
+                )}
               </div>
-            </Fragment>
+              <span className="step-label" style={{
+                fontFamily: "'JetBrains Mono', monospace", fontSize: '8px',
+                letterSpacing: '0.4px', textTransform: 'uppercase',
+                color: active ? 'var(--copper)' : done ? 'var(--text-muted)' : 'var(--text-dim)',
+                transition: 'color 0.3s ease', whiteSpace: 'nowrap',
+              }}>
+                {label}
+              </span>
+            </div>
           )
         })}
       </div>
-      {/* Step counter — centered below the dots */}
-      <span style={{
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '0.5px',
-      }}>
-        Step {step} of 3
-      </span>
     </div>
   )
 }
@@ -261,15 +250,16 @@ function RightPanel() {
 
           {/* Step 1 — Identity (buttons in action bar) */}
           {step === 1 && (
-            <div style={{ padding: '22px 28px 16px' }}>
+            <div style={{ padding: '16px 22px 10px' }}>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
-                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '5px',
+                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '4px',
               }}>
                 How would you identify yourself?
               </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '10px' }}>
                 This helps us show you the most relevant insights.
               </p>
               <div className="identity-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -278,12 +268,12 @@ function RightPanel() {
                     <div style={{
                       fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
                       color: identity === id.val ? 'var(--copper)' : 'var(--text-dim)',
-                      marginBottom: '4px', letterSpacing: '0.5px',
+                      marginBottom: '2px', letterSpacing: '0.5px',
                     }}>
                       {id.tag}
                     </div>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{id.label}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>{id.sublabel}</div>
+                    <div className="identity-sublabel" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>{id.sublabel}</div>
                   </OptionCard>
                 ))}
               </div>
@@ -292,20 +282,21 @@ function RightPanel() {
 
           {/* Step 2 — Pain points (buttons in action bar) */}
           {step === 2 && identity && (
-            <div style={{ padding: '22px 28px 16px' }}>
+            <div style={{ padding: '16px 22px 10px' }}>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
-                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '5px',
+                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '4px',
               }}>
                 {step2Titles[identity]}
               </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '4px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '2px' }}>
                 Pick up to two that feel most pressing right now.
               </p>
               <p style={{
                 fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
-                color: 'var(--text-dim)', marginBottom: '14px',
+                color: 'var(--text-dim)', marginBottom: '8px',
               }}>
                 {pains.length} of {MAX_PAIN} selected
               </p>
@@ -330,7 +321,7 @@ function RightPanel() {
                       </div>
                       <div>
                         <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)', lineHeight: 1.35 }}>{opt.main}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', lineHeight: 1.4 }}>{opt.desc}</div>
+                        <div className="option-desc" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', lineHeight: 1.4 }}>{opt.desc}</div>
                       </div>
                     </div>
                   </OptionCard>
@@ -341,11 +332,12 @@ function RightPanel() {
 
           {/* Step 3 — Contact (buttons in action bar) */}
           {step === 3 && (
-            <div style={{ padding: '22px 28px 16px' }}>
+            <div style={{ padding: '16px 22px 10px' }}>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
-                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '5px',
+                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '4px',
               }}>
                 A bit about you
               </h3>
@@ -572,7 +564,7 @@ export default function Landing() {
 
         {/* ── LEFT — hero ── */}
         <div className="panel-left">
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: '420px' }}>
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: '480px', width: '100%' }}>
 
             {/* Badge */}
             <div style={{
@@ -581,7 +573,7 @@ export default function Landing() {
               background: 'hsl(25 85% 58% / 0.07)',
               border: '1px solid hsl(25 85% 58% / 0.18)',
               borderRadius: '100px',
-              marginBottom: '16px',
+              marginBottom: '28px',
             }}>
               <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--copper)', flexShrink: 0 }} />
               <span style={{
@@ -600,7 +592,7 @@ export default function Landing() {
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontWeight: 800, lineHeight: 1.05,
                 letterSpacing: '-0.04em', textTransform: 'uppercase',
-                color: 'var(--text)', marginBottom: '12px',
+                color: 'var(--text)', marginBottom: '22px',
               }}
             >
               Shape the<br />
@@ -610,36 +602,37 @@ export default function Landing() {
 
             {/* Lead */}
             <p style={{
-              fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.65,
-              maxWidth: '380px', marginBottom: '24px', letterSpacing: '-0.01em',
+              fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.7,
+              maxWidth: '420px', marginBottom: '8px', letterSpacing: '-0.01em',
             }}>
               Built for NDT, QA, and inspection professionals. Your input shapes every feature we build.
             </p>
 
-            <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '20px', maxWidth: '300px' }} />
-
             {/* How it works */}
-            <div className="left-how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {howItWorks.map((s, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <div style={{
-                    width: '30px', height: '30px', flexShrink: 0,
-                    border: '1px solid var(--border-color)', borderRadius: '8px',
-                    background: 'hsl(217 18% 14%)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <span style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: '10px', fontWeight: 600, color: 'var(--text-dim)',
+            <div style={{ marginTop: '32px' }}>
+              <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '28px', maxWidth: '340px' }} />
+              <div className="left-how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                {howItWorks.map((s, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{
+                      width: '40px', height: '40px', flexShrink: 0,
+                      border: '1px solid var(--border-color)', borderRadius: '10px',
+                      background: 'hsl(217 18% 14%)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
+                      <span style={{
+                        fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)',
+                      }}>
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.3px' }}>
+                      {s.title}
+                    </p>
                   </div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}>
-                    {s.title}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
           </div>
