@@ -8,7 +8,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/admin" element={<DataPage />} />
+        <Route path="/data" element={<DataPage />} />
       </Routes>
     </BrowserRouter>
   )
