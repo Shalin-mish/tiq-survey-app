@@ -108,7 +108,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 28px 44px;
+  padding: 28px 28px 28px 52px;
   position: relative;
   background: var(--bg);
 }
@@ -272,7 +272,7 @@ body {
 /* Desktop panel-right: no panel-level scroll — card handles it internally */
 .panel-right {
   overflow: hidden;
-  padding: 24px 32px;
+  padding: 24px 40px 24px 20px;
 }
 
 /* Card — flex column, fills the main axis of panel-right */

@@ -11,9 +11,9 @@ const MAX_PAIN = 2
 
 
 const howItWorks = [
-  { title: 'Choose Your Role' },
-  { title: 'Share Challenges' },
-  { title: 'Leave Your Details' },
+  { title: 'Choose Your Role',    sub: 'Tell us how you work in the industry' },
+  { title: 'Share Your Challenges', sub: 'Pick the problems that matter most to you' },
+  { title: 'Leave Your Details',  sub: 'So we can keep you in the loop' },
 ]
 
 /* ── Selectable option card — defined outside RightPanel to keep
@@ -32,7 +32,7 @@ function OptionCard({
           ? '1px solid var(--copper)'
           : hovered ? '1px solid hsl(217 14% 36%)' : '1px solid var(--border-color)',
         borderRadius: '10px',
-        padding: '8px 12px',
+        padding: '11px 13px',
         cursor: 'pointer',
         background: selected
           ? 'hsl(25 85% 58% / 0.08)'
@@ -268,12 +268,12 @@ function RightPanel() {
                     <div style={{
                       fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
                       color: identity === id.val ? 'var(--copper)' : 'var(--text-dim)',
-                      marginBottom: '2px', letterSpacing: '0.5px',
+                      marginBottom: '3px', letterSpacing: '0.5px',
                     }}>
                       {id.tag}
                     </div>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{id.label}</div>
-                    <div className="identity-sublabel" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>{id.sublabel}</div>
+                    <div className="identity-sublabel" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.3 }}>{id.sublabel}</div>
                   </OptionCard>
                 ))}
               </div>
@@ -321,7 +321,7 @@ function RightPanel() {
                       </div>
                       <div>
                         <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)', lineHeight: 1.35 }}>{opt.main}</div>
-                        <div className="option-desc" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', lineHeight: 1.4 }}>{opt.desc}</div>
+                        <div className="option-desc" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>{opt.desc}</div>
                       </div>
                     </div>
                   </OptionCard>
@@ -581,7 +581,7 @@ export default function Landing() {
                 fontSize: '10px', fontWeight: 500,
                 color: 'var(--copper)', letterSpacing: '1.5px', textTransform: 'uppercase',
               }}>
-                Interest Survey · 2026
+                NDT & Inspection Industry · 2026
               </span>
             </div>
 
@@ -595,9 +595,7 @@ export default function Landing() {
                 color: 'var(--text)', marginBottom: '22px',
               }}
             >
-              Shape the<br />
-              <span style={{ color: 'var(--copper)' }}>future</span> of<br />
-              inspection.
+              Your insight<br />shapes the <span style={{ color: 'var(--copper)' }}>future</span><br />of inspection.
             </h1>
 
             {/* Lead */}
@@ -605,7 +603,7 @@ export default function Landing() {
               fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.7,
               maxWidth: '420px', marginBottom: '8px', letterSpacing: '-0.01em',
             }}>
-              Built for NDT, QA, and inspection professionals. Your input shapes every feature we build.
+              TIQ World is being built around real challenges faced by NDT, QA, and inspection professionals. Take 2 minutes — your input directly shapes what we build.
             </p>
 
             {/* How it works */}
@@ -613,23 +611,28 @@ export default function Landing() {
               <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '28px', maxWidth: '340px' }} />
               <div className="left-how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 {howItWorks.map((s, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                     <div style={{
-                      width: '40px', height: '40px', flexShrink: 0,
+                      width: '36px', height: '36px', flexShrink: 0, marginTop: '2px',
                       border: '1px solid var(--border-color)', borderRadius: '10px',
                       background: 'hsl(217 18% 14%)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <span style={{
                         fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)',
+                        fontSize: '11px', fontWeight: 600, color: 'var(--text-dim)',
                       }}>
                         {String(i + 1).padStart(2, '0')}
                       </span>
                     </div>
-                    <p style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.3px' }}>
-                      {s.title}
-                    </p>
+                    <div>
+                      <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.3px', lineHeight: 1.3 }}>
+                        {s.title}
+                      </p>
+                      <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '3px', lineHeight: 1.5 }}>
+                        {s.sub}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
