@@ -328,7 +328,7 @@ export default function DataPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
-  const [token, setToken]       = useState(() => sessionStorage.getItem('admin_token') || '')
+  const [token, setToken]       = useState(() => localStorage.getItem('admin_token') || '')
 
   async function handleLogin() {
     if (!email || !password) return
@@ -342,7 +342,7 @@ export default function DataPage() {
       if (res.status === 401) { setError('Invalid credentials'); setLoading(false); return }
       if (!res.ok) throw new Error()
       const { token: t } = await res.json()
-      sessionStorage.setItem('admin_token', t)
+      localStorage.setItem('admin_token', t)
       setToken(t)
     } catch {
       setError('Server error. Is the backend running?')
@@ -350,7 +350,7 @@ export default function DataPage() {
   }
 
   function handleLogout() {
-    sessionStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_token')
     setToken('')
   }
 

@@ -84,7 +84,7 @@ router.post('/admin/login', (req, res) => {
   }
 
   // Sign JWT — expires in 8 hours, survives server restarts
-  const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '8h' })
+  const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '15d' })
   res.json({ token })
 })
 
