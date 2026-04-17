@@ -573,7 +573,7 @@ export default function Landing() {
               background: 'hsl(25 85% 58% / 0.07)',
               border: '1px solid hsl(25 85% 58% / 0.18)',
               borderRadius: '100px',
-              marginBottom: '28px',
+              marginBottom: '14px',
             }}>
               <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--copper)', flexShrink: 0 }} />
               <span style={{
@@ -592,7 +592,7 @@ export default function Landing() {
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontWeight: 800, lineHeight: 1.05,
                 letterSpacing: '-0.04em', textTransform: 'uppercase',
-                color: 'var(--text)', marginBottom: '22px',
+                color: 'var(--text)', marginBottom: '12px',
               }}
             >
               Your insight<br />shapes the <span style={{ color: 'var(--copper)' }}>future</span><br />of inspection.
@@ -600,36 +600,36 @@ export default function Landing() {
 
             {/* Lead */}
             <p style={{
-              fontSize: '16px', color: 'var(--text-muted)', lineHeight: 1.7,
-              maxWidth: '420px', marginBottom: '8px', letterSpacing: '-0.01em',
+              fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.65,
+              maxWidth: '420px', marginBottom: '4px', letterSpacing: '-0.01em',
             }}>
               TIQ World is being built around real challenges faced by NDT, QA, and inspection professionals. Take 2 minutes — your input directly shapes what we build.
             </p>
 
             {/* How it works */}
-            <div style={{ marginTop: '32px' }}>
-              <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '28px', maxWidth: '340px' }} />
-              <div className="left-how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div style={{ marginTop: '18px' }}>
+              <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '14px', maxWidth: '340px' }} />
+              <div className="left-how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {howItWorks.map((s, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                  <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                     <div style={{
-                      width: '36px', height: '36px', flexShrink: 0, marginTop: '2px',
-                      border: '1px solid var(--border-color)', borderRadius: '10px',
+                      width: '28px', height: '28px', flexShrink: 0, marginTop: '1px',
+                      border: '1px solid var(--border-color)', borderRadius: '8px',
                       background: 'hsl(217 18% 14%)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       <span style={{
                         fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: '11px', fontWeight: 600, color: 'var(--text-dim)',
+                        fontSize: '10px', fontWeight: 600, color: 'var(--text-dim)',
                       }}>
                         {String(i + 1).padStart(2, '0')}
                       </span>
                     </div>
                     <div>
-                      <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.3px', lineHeight: 1.3 }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px', lineHeight: 1.3 }}>
                         {s.title}
                       </p>
-                      <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '3px', lineHeight: 1.5 }}>
+                      <p style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '2px', lineHeight: 1.45 }}>
                         {s.sub}
                       </p>
                     </div>
