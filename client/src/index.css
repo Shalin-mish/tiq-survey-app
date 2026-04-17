@@ -267,7 +267,7 @@ body {
 ══════════════════════════════════════ */
 
 /* Hero headline font size */
-.hero-headline { font-size: clamp(28px, 3.2vw, 44px); }
+.hero-headline { font-size: clamp(36px, 4.2vw, 56px); }
 
 /* Desktop panel-right: no panel-level scroll — card handles it internally */
 .panel-right {
@@ -318,7 +318,7 @@ body {
 
 /* ── Tablet (≤ 900px) — stacked layout, card returns to natural height ── */
 @media (max-width: 900px) {
-  .hero-headline       { font-size: clamp(24px, 4vw, 34px); }
+  .hero-headline       { font-size: clamp(28px, 4.5vw, 42px); }
   .panel-right         { overflow-y: auto; padding: 28px 20px; }
   .survey-card         { flex: none; height: auto; min-height: auto; }
   .card-scroll-body    { overflow-y: visible; min-height: auto; flex: none; }
