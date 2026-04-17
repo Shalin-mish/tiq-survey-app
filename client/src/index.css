@@ -267,7 +267,7 @@ body {
 ══════════════════════════════════════ */
 
 /* Hero headline font size */
-.hero-headline { font-size: clamp(30px, 3.4vw, 48px); }
+.hero-headline { font-size: clamp(32px, 3.6vw, 52px); }
 
 /* Desktop panel-right: no panel-level scroll — card handles it internally */
 .panel-right {
