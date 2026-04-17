@@ -251,12 +251,8 @@ export default function DataPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <header className="app-nav-header">
         <div className="app-nav-pill">
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-            background: 'linear-gradient(90deg, transparent, hsl(25 85% 58% / 0.45), transparent)',
-          }} />
           <Logo />
-          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--copper)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase' }}>
             Admin View
           </span>
         </div>
@@ -272,23 +268,16 @@ export default function DataPage() {
       minHeight: '100vh', background: 'var(--bg)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '24px',
-      position: 'relative', overflow: 'hidden',
     }}>
-      <div className="blueprint-grid" style={{ position: 'absolute', inset: 0 }} />
       <div style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse 70% 70% at 50% 50%, transparent, var(--bg) 85%)',
-      }} />
-
-      <div className="anim-scale" style={{
-        position: 'relative', zIndex: 1,
         width: '100%', maxWidth: '400px',
-        background: 'var(--surface)',
+        background: 'hsl(217 18% 15%)',
         border: '1px solid var(--border-color)',
-        borderRadius: 'var(--radius)',
+        borderRadius: '16px',
         overflow: 'hidden',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
       }}>
-        <div style={{ height: '3px', background: 'linear-gradient(90deg, var(--copper), var(--teal))' }} />
+        <div style={{ height: '2px', background: 'hsl(217 14% 28%)' }} />
         <div style={{ padding: '36px 32px' }}>
           <div style={{ marginBottom: '28px' }}>
             <Logo />
