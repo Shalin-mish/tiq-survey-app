@@ -19,8 +19,8 @@ const howItWorks = [
 /* ── Selectable option card — defined outside RightPanel to keep
    component identity stable across parent re-renders ── */
 function OptionCard({
-  selected, onClick, children,
-}: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+  selected, onClick, children, style,
+}: { selected: boolean; onClick: () => void; children: React.ReactNode; style?: React.CSSProperties }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -39,6 +39,7 @@ function OptionCard({
           : hovered ? 'hsl(217 16% 22%)' : 'hsl(217 18% 19%)',
         transition: 'border-color 150ms ease, background 150ms ease',
         userSelect: 'none',
+        ...style,
       }}
     >
       {children}
@@ -52,7 +53,7 @@ function StepIndicator({ step }: { step: Step }) {
   const labels = ['Identity', 'Challenges', 'Details']
   return (
     <div style={{
-      padding: '14px 24px 12px',
+      padding: '14px 22px 12px',
       borderBottom: '1px solid var(--border-color)',
       flexShrink: 0,
     }}>
@@ -212,13 +213,13 @@ function RightPanel() {
 
           {/* Step 0 — Intro (centered, no button here — button is in action bar) */}
           {step === 0 && (
-            <div className="card-center-content" style={{ padding: '32px 32px 16px' }}>
+            <div className="card-center-content" style={{ padding: '24px 32px 16px' }}>
               <div style={{
                 width: '50px', height: '50px', borderRadius: '14px',
                 background: 'hsl(25 85% 58% / 0.1)',
                 border: '1px solid hsl(25 85% 58% / 0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 20px',
+                margin: '0 auto 16px',
               }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                   <path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
@@ -250,7 +251,7 @@ function RightPanel() {
 
           {/* Step 1 — Identity (buttons in action bar) */}
           {step === 1 && (
-            <div style={{ padding: '16px 22px 10px' }}>
+            <div style={{ padding: '16px 22px 2px', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
               <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
@@ -262,9 +263,9 @@ function RightPanel() {
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '10px' }}>
                 This helps us show you the most relevant insights.
               </p>
-              <div className="identity-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              <div className="identity-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', flex: 1, gridAutoRows: '1fr' }}>
                 {identities.map((id) => (
-                  <OptionCard key={id.val} selected={identity === id.val} onClick={() => setIdentity(id.val)}>
+                  <OptionCard key={id.val} selected={identity === id.val} onClick={() => setIdentity(id.val)} style={{ padding: '8px 10px' }}>
                     <div style={{
                       fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
                       color: identity === id.val ? 'var(--copper)' : 'var(--text-dim)',
@@ -282,7 +283,7 @@ function RightPanel() {
 
           {/* Step 2 — Pain points (buttons in action bar) */}
           {step === 2 && identity && (
-            <div style={{ padding: '16px 22px 10px' }}>
+            <div style={{ padding: '16px 22px 2px', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
               <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
@@ -300,9 +301,9 @@ function RightPanel() {
               }}>
                 {pains.length} of {MAX_PAIN} selected
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
                 {painList.map((opt, i) => (
-                  <OptionCard key={i} selected={pains.includes(i)} onClick={() => togglePain(i)}>
+                  <OptionCard key={i} selected={pains.includes(i)} onClick={() => togglePain(i)} style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                       <div style={{
                         width: '16px', height: '16px', flexShrink: 0, marginTop: '2px',
@@ -341,7 +342,7 @@ function RightPanel() {
               }}>
                 A bit about you
               </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '18px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '12px' }}>
                 So we can keep you in the loop as we build.
               </p>
               <Input label="Full name"    type="text"  placeholder="Your name"
