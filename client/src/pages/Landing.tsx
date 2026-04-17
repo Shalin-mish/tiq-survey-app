@@ -252,7 +252,6 @@ function RightPanel() {
           {/* Step 1 — Identity (buttons in action bar) */}
           {step === 1 && (
             <div style={{ padding: '16px 22px 2px', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
-              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
@@ -260,7 +259,7 @@ function RightPanel() {
               }}>
                 How would you identify yourself?
               </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '10px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '5px' }}>
                 This helps us show you the most relevant insights.
               </p>
               <div className="identity-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', flex: 1, gridAutoRows: '1fr' }}>
@@ -273,8 +272,8 @@ function RightPanel() {
                     }}>
                       {id.tag}
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{id.label}</div>
-                    <div className="identity-sublabel" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.3 }}>{id.sublabel}</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{id.label}</div>
+                    <div className="identity-sublabel" style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{id.sublabel}</div>
                   </OptionCard>
                 ))}
               </div>
@@ -284,7 +283,6 @@ function RightPanel() {
           {/* Step 2 — Pain points (buttons in action bar) */}
           {step === 2 && identity && (
             <div style={{ padding: '16px 22px 2px', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
-              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
@@ -333,37 +331,35 @@ function RightPanel() {
 
           {/* Step 3 — Contact (buttons in action bar) */}
           {step === 3 && (
-            <div style={{ padding: '16px 22px 10px' }}>
-              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>Step {step} of 3</p>
+            <div style={{ padding: '16px 22px 2px', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
               <h3 style={{
                 fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
-                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '4px',
+                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '10px',
               }}>
                 A bit about you
               </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '12px' }}>
-                So we can keep you in the loop as we build.
-              </p>
-              <Input label="Full name"    type="text"  placeholder="Your name"
-                value={form.name}         onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
-              <Input label="Work email"   type="email" placeholder="name@company.com"
-                value={form.email}        onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
-              {form.email.length > 0 && (
-                <p style={{
-                  fontSize: '11px', marginTop: '-10px', marginBottom: '14px',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
-                    ? 'hsl(142 65% 42%)' : 'hsl(0 72% 56%)',
-                }}>
-                  {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
-                    ? '✓ Looks good' : '✗ Enter a valid email'}
-                </p>
-              )}
-              <Input label="Phone number" type="tel"   placeholder="+91 98765 43210"
-                value={form.phone}        onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
-              <Input label="Organisation" type="text"  placeholder="Company or institution"
-                value={form.organisation} onChange={(e) => setForm(f => ({ ...f, organisation: e.target.value }))} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly' }}>
+                <Input label="Full name"    type="text"  placeholder="Your name"
+                  value={form.name}         onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
+                <Input label="Work email"   type="email" placeholder="name@company.com"
+                  value={form.email}        onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
+                {form.email.length > 0 && (
+                  <p style={{
+                    fontSize: '11px', marginTop: '-10px', marginBottom: '8px',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    color: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+                      ? 'hsl(142 65% 42%)' : 'hsl(0 72% 56%)',
+                  }}>
+                    {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+                      ? '✓ Looks good' : '✗ Enter a valid email'}
+                  </p>
+                )}
+                <Input label="Phone number" type="tel"   placeholder="+91 98765 43210"
+                  value={form.phone}        onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
+                <Input label="Organisation" type="text"  placeholder="Company or institution"
+                  value={form.organisation} onChange={(e) => setForm(f => ({ ...f, organisation: e.target.value }))} />
+              </div>
             </div>
           )}
 

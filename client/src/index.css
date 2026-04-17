@@ -345,8 +345,4 @@ body {
   .step-label { display: none; }
 }
 
-/* ── Short viewport (≤ 720px height) — hide option descriptions to prevent scroll ── */
-@media (max-height: 720px) {
-  .option-desc       { display: none; }
-  .identity-sublabel { display: none; }
-}
+/* ── Short viewport (≤ 720px height) ── */
