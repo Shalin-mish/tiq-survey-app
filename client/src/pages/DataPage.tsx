@@ -30,15 +30,9 @@ const fmt = (iso: string) =>
 function exportCSV(responses: Response[]) {
   const headers = ['ID', 'Name', 'Email', 'Phone', 'Organisation', 'Identity', 'Challenge 1', 'Challenge 2', 'Submitted']
   const rows = responses.map(r => [
-    r.id,
-    r.name,
-    r.email,
-    r.phone,
-    r.organisation,
+    r.id, r.name, r.email, r.phone, r.organisation,
     identityLabel[r.identity] ?? r.identity,
-    r.pain_1,
-    r.pain_2 || '',
-    fmt(r.created_at),
+    r.pain_1, r.pain_2 || '', fmt(r.created_at),
   ])
   const csv = [headers, ...rows]
     .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
@@ -46,27 +40,39 @@ function exportCSV(responses: Response[]) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url  = URL.createObjectURL(blob)
   const a    = document.createElement('a')
-  a.href     = url
+  a.href = url
   a.download = `tiqworld-survey-${new Date().toISOString().slice(0, 10)}.csv`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  document.body.appendChild(a); a.click()
+  document.body.removeChild(a); URL.revokeObjectURL(url)
+}
+
+/* ── Shared input style for search / select ── */
+const ctrlStyle: React.CSSProperties = {
+  background: 'hsl(217 18% 17%)',
+  border: '1px solid var(--border-color)',
+  borderRadius: '8px',
+  padding: '0 12px',
+  height: '36px',
+  fontSize: '13px',
+  color: 'var(--text)',
+  outline: 'none',
+  fontFamily: "'Space Grotesk', sans-serif",
+  transition: 'border-color 150ms ease',
 }
 
 /* ── Admin data view ── */
 function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const [responses, setResponses]   = useState<Response[]>([])
-  const [loading, setLoading]       = useState(false)
-  const [loaded, setLoaded]         = useState(false)
-  const [error, setError]           = useState('')
+  const [responses, setResponses] = useState<Response[]>([])
+  const [loading, setLoading]     = useState(false)
+  const [loaded, setLoaded]       = useState(false)
+  const [error, setError]         = useState('')
+  const [search, setSearch]           = useState('')
+  const [identityFilter, setIdentityFilter] = useState('all')
 
-  // Auto-load on mount
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       const res = await fetch('http://localhost:4000/api/admin/responses', {
         headers: { Authorization: `Bearer ${token}` },
@@ -79,6 +85,22 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
     } finally { setLoading(false) }
   }
 
+  /* identity breakdown — only identities that have at least one response */
+  const breakdown = Object.entries(identityLabel)
+    .map(([key, label]) => ({ key, label, count: responses.filter(r => r.identity === key).length }))
+    .filter(b => b.count > 0)
+
+  /* filtered list */
+  const filtered = responses.filter(r => {
+    const q = search.toLowerCase().trim()
+    const matchSearch = !q ||
+      r.name.toLowerCase().includes(q) ||
+      r.email.toLowerCase().includes(q) ||
+      r.organisation.toLowerCase().includes(q)
+    const matchIdentity = identityFilter === 'all' || r.identity === identityFilter
+    return matchSearch && matchIdentity
+  })
+
   if (!loaded) return (
     <div style={{ flex: 1, padding: '32px 40px' }}>
       {error ? (
@@ -88,7 +110,7 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {[1,2,3].map(i => (
+          {[1, 2, 3].map(i => (
             <div key={i} className="skeleton" style={{ height: '90px', borderRadius: 'var(--radius)' }} />
           ))}
         </div>
@@ -97,22 +119,29 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
   )
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '28px 40px' }}>
+
+      {/* ── Header row ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '4px' }}>
             Survey Responses
           </p>
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--text)' }}>
             {responses.length} {responses.length === 1 ? 'submission' : 'submissions'}
+            {filtered.length !== responses.length && (
+              <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--text-dim)', marginLeft: '8px' }}>
+                · showing {filtered.length}
+              </span>
+            )}
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Button variant="outline" onClick={() => exportCSV(responses)} style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}>
+          <Button variant="outline" onClick={() => exportCSV(filtered)} style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}>
             Export CSV
           </Button>
-          <Button variant="outline" onClick={loadData} style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}>
-            Refresh
+          <Button variant="outline" onClick={loadData} disabled={loading} style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}>
+            {loading ? 'Loading…' : 'Refresh'}
           </Button>
           <Button variant="ghost" onClick={onLogout} style={{ height: '36px', padding: '0 16px', fontSize: '13px', color: 'var(--text-dim)' }}>
             Logout
@@ -120,17 +149,97 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
         </div>
       </div>
 
-      {responses.length === 0 ? (
-        <div style={{
-          border: '1px dashed var(--border-color)',
-          borderRadius: 'var(--radius)',
-          padding: '48px', textAlign: 'center',
-        }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>No responses yet.</p>
+      {responses.length > 0 && (<>
+
+        {/* ── Identity breakdown chips (clickable to filter) ── */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+          {breakdown.map(b => {
+            const active = identityFilter === b.key
+            return (
+              <button
+                key={b.key}
+                onClick={() => setIdentityFilter(active ? 'all' : b.key)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '5px 12px',
+                  background: active ? 'hsl(25 85% 58% / 0.1)' : 'hsl(217 16% 18%)',
+                  border: `1px solid ${active ? 'hsl(25 85% 58% / 0.35)' : 'var(--border-color)'}`,
+                  borderRadius: '100px',
+                  cursor: 'pointer',
+                  transition: 'border-color 150ms ease, background 150ms ease',
+                }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: 500, color: active ? 'var(--copper)' : 'var(--text-muted)' }}>
+                  {b.label}
+                </span>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: '10px', fontWeight: 700,
+                  color: active ? 'var(--copper)' : 'var(--text-dim)',
+                  background: active ? 'hsl(25 85% 58% / 0.15)' : 'hsl(217 14% 24%)',
+                  borderRadius: '4px', padding: '1px 5px',
+                }}>
+                  {b.count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ── Search + identity filter ── */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '320px' }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+              style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              <circle cx="7" cy="7" r="5" stroke="var(--text-dim)" strokeWidth="1.5" />
+              <path d="M11 11l3 3" stroke="var(--text-dim)" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search name, email, or org…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ ...ctrlStyle, width: '100%', paddingLeft: '32px' }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: 0 }}
+              >×</button>
+            )}
+          </div>
+          <select
+            value={identityFilter}
+            onChange={e => setIdentityFilter(e.target.value)}
+            style={{ ...ctrlStyle, cursor: 'pointer' }}
+          >
+            <option value="all">All roles</option>
+            {Object.entries(identityLabel).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </div>
+
+      </>)}
+
+      {/* ── Response list ── */}
+      {filtered.length === 0 ? (
+        <div style={{ border: '1px dashed var(--border-color)', borderRadius: 'var(--radius)', padding: '48px', textAlign: 'center' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+            {responses.length === 0 ? 'No responses yet.' : 'No results match your search.'}
+          </p>
+          {(search || identityFilter !== 'all') && (
+            <button
+              onClick={() => { setSearch(''); setIdentityFilter('all') }}
+              style={{ marginTop: '12px', background: 'none', border: 'none', color: 'var(--copper)', cursor: 'pointer', fontSize: '13px', fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {responses.map((r) => (
+          {filtered.map((r) => (
             <div
               key={r.id}
               style={{
@@ -158,8 +267,7 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
                     border: '1px solid hsl(25 85% 58% / 0.3)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: "'Space Grotesk', sans-serif",
-                    fontSize: '13px', fontWeight: 600, color: 'var(--copper)',
-                    flexShrink: 0,
+                    fontSize: '13px', fontWeight: 600, color: 'var(--copper)', flexShrink: 0,
                   }}>
                     {r.name.charAt(0).toUpperCase()}
                   </div>
@@ -224,8 +332,7 @@ export default function DataPage() {
 
   async function handleLogin() {
     if (!email || !password) return
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       const res = await fetch('http://localhost:4000/api/admin/login', {
         method: 'POST',
@@ -279,31 +386,21 @@ export default function DataPage() {
       }}>
         <div style={{ height: '2px', background: 'hsl(217 14% 28%)' }} />
         <div style={{ padding: '36px 32px' }}>
-          <div style={{ marginBottom: '28px' }}>
-            <Logo />
-          </div>
+          <div style={{ marginBottom: '28px' }}><Logo /></div>
           <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '6px' }}>
             Admin Access
           </p>
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '18px', fontWeight: 700, letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '24px' }}>
             Sign in to view responses
           </h2>
-
           <Input label="Email"    type="email"    placeholder="admin@tiqworld.com" value={email}    onChange={(e) => { setEmail(e.target.value); setError('') }} />
           <Input label="Password" type="password" placeholder="••••••••"           value={password} onChange={(e) => { setPassword(e.target.value); setError('') }} />
-
           {error && (
             <p style={{ fontSize: '13px', color: 'hsl(0,72%,56%)', marginBottom: '12px', fontFamily: "'JetBrains Mono', monospace" }}>
               {error}
             </p>
           )}
-
-          <Button
-            variant="primary"
-            disabled={!email || !password || loading}
-            onClick={handleLogin}
-            style={{ width: '100%', marginTop: '8px' }}
-          >
+          <Button variant="primary" disabled={!email || !password || loading} onClick={handleLogin} style={{ width: '100%', marginTop: '8px' }}>
             {loading ? 'Signing in…' : 'Sign In'}
           </Button>
         </div>

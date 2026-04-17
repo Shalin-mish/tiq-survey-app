@@ -57,9 +57,10 @@ function StepIndicator({ step }: { step: Step }) {
     <div style={{
       padding: '14px 24px',
       borderBottom: '1px solid var(--border-color)',
-      display: 'flex', alignItems: 'center',
+      display: 'flex', alignItems: 'center', gap: '16px',
       flexShrink: 0,
     }}>
+      <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
       {labels.map((label, i) => {
         const s      = i + 1
         const active = s === step
@@ -106,6 +107,14 @@ function StepIndicator({ step }: { step: Step }) {
           </div>
         )
       })}
+      </div>
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '10px', color: 'var(--text-dim)',
+        letterSpacing: '0.5px', flexShrink: 0,
+      }}>
+        {step} / 3
+      </span>
     </div>
   )
 }
@@ -347,6 +356,17 @@ function RightPanel() {
                 value={form.name}         onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
               <Input label="Work email"   type="email" placeholder="name@company.com"
                 value={form.email}        onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
+              {form.email.length > 0 && (
+                <p style={{
+                  fontSize: '11px', marginTop: '-10px', marginBottom: '14px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+                    ? 'hsl(142 65% 42%)' : 'hsl(0 72% 56%)',
+                }}>
+                  {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+                    ? '✓ Looks good' : '✗ Enter a valid email'}
+                </p>
+              )}
               <Input label="Phone number" type="tel"   placeholder="+91 98765 43210"
                 value={form.phone}        onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
               <Input label="Organisation" type="text"  placeholder="Company or institution"
