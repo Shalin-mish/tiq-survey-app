@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import Logo from '../components/Logo'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -8,57 +8,143 @@ type Step = 0 | 1 | 2 | 3 | 4
 interface FormData { name: string; email: string; phone: string; organisation: string }
 
 const MAX_PAIN = 2
-const progressWidth: Record<number, string> = { 0: '0%', 1: '25%', 2: '50%', 3: '75%', 4: '100%' }
+
+const stepMaxWidth: Record<number, string> = {
+  0: '440px', 1: '540px', 2: '480px', 3: '440px', 4: '440px',
+}
 
 const howItWorks = [
-  { num: '01', title: 'Identify Yourself',     desc: 'Your role in NDT, QA, or inspection.' },
-  { num: '02', title: 'Share Your Challenges', desc: 'Up to two pain points pressing right now.' },
-  { num: '03', title: 'Leave Your Details',    desc: 'So we can reach you as TIQ World grows.' },
+  { title: 'Choose Your Role' },
+  { title: 'Share Challenges' },
+  { title: 'Leave Your Details' },
 ]
 
-/* ══════════════════════════════════════
-   TRANSITION HOOK
-══════════════════════════════════════ */
-function useStepTransition(initial: Step) {
-  const [step, setStepRaw]    = useState<Step>(initial)
-  const [visible, setVisible] = useState(true)
+/* ── Selectable option card — defined outside RightPanel to keep
+   component identity stable across parent re-renders ── */
+function OptionCard({
+  selected, onClick, children,
+}: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        border: selected
+          ? '1px solid var(--copper)'
+          : hovered ? '1px solid hsl(217 14% 36%)' : '1px solid var(--border-color)',
+        borderRadius: '10px',
+        padding: '12px 14px',
+        cursor: 'pointer',
+        background: selected
+          ? 'hsl(25 85% 58% / 0.08)'
+          : hovered ? 'hsl(217 16% 22%)' : 'hsl(217 18% 19%)',
+        transition: 'border-color 150ms ease, background 150ms ease',
+        userSelect: 'none',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
 
-  const goTo = useCallback((next: Step) => {
-    setVisible(false)
-    setTimeout(() => {
-      setStepRaw(next)
-      setVisible(true)
-    }, 200)
-  }, [])
-
-  return { step, visible, goTo }
+/* ── Step indicator (steps 1–3 only) — defined outside RightPanel ── */
+function StepIndicator({ step }: { step: Step }) {
+  if (step === 0 || step === 4) return null
+  const labels = ['Identity', 'Challenges', 'Details']
+  return (
+    <div style={{
+      padding: '14px 24px',
+      borderBottom: '1px solid var(--border-color)',
+      display: 'flex', alignItems: 'center',
+      flexShrink: 0,
+    }}>
+      {labels.map((label, i) => {
+        const s      = i + 1
+        const active = s === step
+        const done   = s < step
+        return (
+          <div key={s} style={{ display: 'flex', alignItems: 'center', flex: s < 3 ? 1 : 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <div style={{
+                width: '26px', height: '26px', borderRadius: '50%',
+                border: `1.5px solid ${done || active ? 'var(--copper)' : 'hsl(217 14% 32%)'}`,
+                background: done ? 'var(--copper)' : active ? 'hsl(25 85% 58% / 0.12)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'border-color 0.3s ease, background 0.3s ease',
+              }}>
+                {done ? (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M1.5 5l2.5 2.5 4.5-5" stroke="hsl(217,24%,8%)" strokeWidth="1.7"
+                      strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', fontWeight: 700,
+                    color: active ? 'var(--copper)' : 'var(--text-dim)', transition: 'color 0.3s ease',
+                  }}>{s}</span>
+                )}
+              </div>
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
+                letterSpacing: '0.4px', textTransform: 'uppercase',
+                color: active ? 'var(--copper)' : done ? 'var(--text-muted)' : 'var(--text-dim)',
+                transition: 'color 0.3s ease',
+              }}>
+                {label}
+              </span>
+            </div>
+            {s < 3 && (
+              <div style={{
+                flex: 1, height: '1px', margin: '0 6px', marginBottom: '14px',
+                background: done ? 'var(--copper)' : 'hsl(217 14% 28%)',
+                opacity: done ? 0.5 : 0.35, transition: 'background 0.3s ease',
+              }} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 /* ══════════════════════════════════════
-   RIGHT PANEL — floating card survey
+   RIGHT PANEL
+   Card layout (desktop):
+     ┌─────────────────────┐
+     │ 2px accent          │  ← fixed
+     │ StepIndicator       │  ← fixed (steps 1-3)
+     │ card-scroll-body    │  ← flex: 1, overflow-y: auto, no scrollbar
+     │ card-action-bar     │  ← fixed bottom (steps 0-3)
+     └─────────────────────┘
 ══════════════════════════════════════ */
 function RightPanel() {
-  const { step, visible, goTo }     = useStepTransition(0)
-  const [identity, setIdentity]     = useState<string | null>(null)
-  const [pains, setPains]           = useState<number[]>([])
-  const [submitting, setSubmitting] = useState(false)
-  const [form, setForm]             = useState<FormData>({ name: '', email: '', phone: '', organisation: '' })
-  const [viewOpen, setViewOpen]     = useState(false)
-  const [viewStatus, setViewStatus] = useState<'idle'|'loading'|'found'|'not_found'|'error'>('idle')
-  const [entry, setEntry]           = useState<{ email: string; created_at: string }|null>(null)
+  const [step, setStep]               = useState<Step>(0)
+  const [stepKey, setStepKey]         = useState(0)
+  const [identity, setIdentity]       = useState<string | null>(null)
+  const [pains, setPains]             = useState<number[]>([])
+  const [submitting, setSubmitting]   = useState(false)
+  const [isDuplicate, setIsDuplicate] = useState(false)
+  const [form, setForm]               = useState<FormData>({ name: '', email: '', phone: '', organisation: '' })
+  const [viewOpen, setViewOpen]       = useState(false)
+  const [viewStatus, setViewStatus]   = useState<'idle'|'loading'|'found'|'not_found'|'error'>('idle')
+  const [entry, setEntry]             = useState<{ email: string; created_at: string }|null>(null)
 
   const painList = identity ? painOptions[identity] : []
+
+  function goTo(next: Step) {
+    if (next === 1) setPains([])
+    setStep(next)
+    setStepKey(k => k + 1)
+  }
 
   function togglePain(idx: number) {
     setPains(prev =>
       prev.includes(idx) ? prev.filter(i => i !== idx)
         : prev.length < MAX_PAIN ? [...prev, idx] : prev
     )
-  }
-
-  function goToStep(next: Step) {
-    if (next === 1) setPains([])
-    goTo(next)
   }
 
   const contactValid =
@@ -71,7 +157,7 @@ function RightPanel() {
     if (!contactValid || !identity) return
     setSubmitting(true)
     try {
-      await fetch('http://localhost:4000/api/submit', {
+      const res = await fetch('http://localhost:4000/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,8 +168,13 @@ function RightPanel() {
           phone: form.phone, organisation: form.organisation,
         }),
       })
+      if (res.status === 409) setIsDuplicate(true)
     } catch { /* show thank-you even if server offline */ }
-    finally { setSubmitting(false); goTo(4) }
+    finally {
+      setSubmitting(false)
+      setStepKey(k => k + 1)
+      setStep(4)
+    }
   }
 
   async function handleViewData() {
@@ -101,291 +192,332 @@ function RightPanel() {
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
-  /* ── Option card ── */
-  function OptionCard({ selected, onClick, children }: {
-    selected: boolean; onClick: () => void; children: React.ReactNode
-  }) {
-    const [hovered, setHovered] = useState(false)
-    return (
-      <div
-        onClick={onClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          border: selected
-            ? '1px solid var(--copper)'
-            : hovered ? '1px solid hsl(217,10%,45%)' : '1px solid var(--border-color)',
-          borderRadius: 'var(--radius)',
-          padding: '12px 14px',
-          cursor: 'pointer',
-          background: selected
-            ? 'hsl(25 85% 58% / 0.09)'
-            : hovered ? 'var(--surface-2)' : 'var(--surface-3)',
-          transition: 'border-color var(--t-base), background var(--t-base)',
-          userSelect: 'none',
-        }}
-      >
-        {children}
-      </div>
-    )
-  }
+  return (
+    <div className="survey-card" style={{ maxWidth: stepMaxWidth[step] }}>
 
-  /* ── Content per step (renders inside the floating card) ── */
-  function StepContent() {
-    /* STEP 0 — Intro */
-    if (step === 0) return (
-      <div style={{ padding: '40px 28px', textAlign: 'center' }}>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: '10px', letterSpacing: '2px',
-          textTransform: 'uppercase', color: 'var(--copper)',
-          display: 'block', marginBottom: '16px',
-        }}>
-          Interest Survey
-        </span>
-        <p style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.45, marginBottom: '10px', letterSpacing: '-0.3px' }}>
-          Share your perspective<br />with TIQ World
-        </p>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '28px' }}>
-          3 steps · ~2 minutes · no login
-        </p>
-        <Button
-          variant="primary"
-          onClick={() => goTo(1)}
-          style={{ width: '100%', height: '48px', fontSize: '15px' }}
+      {/* ── Top accent line ── */}
+      <div style={{ height: '2px', background: 'hsl(217 14% 28%)', flexShrink: 0 }} />
+
+      {/* ── Step indicator (steps 1-3) ── */}
+      <StepIndicator step={step} />
+
+      {/*
+        ── Scrollable body ──
+        Array wrapper with changing key → React unmounts/remounts div on each step
+        change, reliably re-firing the CSS entrance animation.
+        No scrollbar shown (CSS: scrollbar-width:none).
+      */}
+      {[
+        <div key={stepKey} className="card-scroll-body"
+          style={{ animation: 'stepIn 0.28s cubic-bezier(0.4,0,0.2,1) both' }}
         >
-          Begin Survey
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </Button>
-      </div>
-    )
 
-    /* STEP 1 — Identity */
-    if (step === 1) return (
-      <div style={{ padding: '24px 28px' }}>
-        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(16px,2vw,19px)', fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--text)', marginBottom: '6px' }}>
-          How would you identify yourself?
-        </h2>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '18px' }}>
-          This helps us show you what's most relevant.
-        </p>
-        <div className="identity-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px' }}>
-          {identities.map((id) => (
-            <OptionCard key={id.val} selected={identity === id.val} onClick={() => setIdentity(id.val)}>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: identity === id.val ? 'var(--copper)' : 'var(--text-dim)', marginBottom: '5px' }}>{id.tag}</div>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)', lineHeight: 1.35 }}>{id.label}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>{id.sublabel}</div>
-            </OptionCard>
-          ))}
-        </div>
-        <Button variant="primary" disabled={!identity} onClick={() => goToStep(2)} style={{ width: '100%' }}>
-          Continue
-        </Button>
-      </div>
-    )
+          {/* Step 0 — Intro (centered, no button here — button is in action bar) */}
+          {step === 0 && (
+            <div className="card-center-content" style={{ padding: '32px 32px 16px' }}>
+              <div style={{
+                width: '50px', height: '50px', borderRadius: '14px',
+                background: 'hsl(25 85% 58% / 0.1)',
+                border: '1px solid hsl(25 85% 58% / 0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 20px',
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    stroke="var(--copper)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <p style={{
+                fontFamily: "'JetBrains Mono', monospace", fontSize: '10px',
+                letterSpacing: '2px', textTransform: 'uppercase',
+                color: 'var(--copper)', marginBottom: '10px',
+              }}>
+                Interest Survey
+              </p>
+              <h3 style={{
+                fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px',
+                fontWeight: 700, color: 'var(--text)',
+                letterSpacing: '-0.4px', lineHeight: 1.35, marginBottom: '8px',
+              }}>
+                Share your perspective<br />with TIQ World
+              </h3>
+              <p style={{
+                fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7,
+                maxWidth: '280px', margin: '0 auto',
+              }}>
+                3 steps · ~2 minutes · no login required
+              </p>
+            </div>
+          )}
 
-    /* STEP 2 — Pain points */
-    if (step === 2 && identity) return (
-      <div style={{ padding: '24px 28px' }}>
-        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(16px,2vw,19px)', fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--text)', marginBottom: '6px' }}>
-          {step2Titles[identity]}
-        </h2>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '4px' }}>
-          Pick up to two that feel most pressing right now.
-        </p>
-        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--text-dim)', marginBottom: '14px' }}>
-          {pains.length} of {MAX_PAIN} selected
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '20px' }}>
-          {painList.map((opt, i) => (
-            <OptionCard key={i} selected={pains.includes(i)} onClick={() => togglePain(i)}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{
-                  width: '16px', height: '16px', flexShrink: 0, marginTop: '2px',
-                  border: `1px solid ${pains.includes(i) ? 'var(--copper)' : 'var(--slate-600)'}`,
-                  borderRadius: '4px',
-                  background: pains.includes(i) ? 'var(--copper)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'background var(--t-base), border-color var(--t-base)',
-                }}>
-                  {pains.includes(i) && (
-                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                      <path d="M1.5 5l2.5 2.5 4.5-5" stroke="hsl(217,24%,8%)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+          {/* Step 1 — Identity (buttons in action bar) */}
+          {step === 1 && (
+            <div style={{ padding: '22px 28px 16px' }}>
+              <h3 style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
+                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '5px',
+              }}>
+                How would you identify yourself?
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
+                This helps us show you the most relevant insights.
+              </p>
+              <div className="identity-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {identities.map((id) => (
+                  <OptionCard key={id.val} selected={identity === id.val} onClick={() => setIdentity(id.val)}>
+                    <div style={{
+                      fontFamily: "'JetBrains Mono', monospace", fontSize: '9px',
+                      color: identity === id.val ? 'var(--copper)' : 'var(--text-dim)',
+                      marginBottom: '4px', letterSpacing: '0.5px',
+                    }}>
+                      {id.tag}
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{id.label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: 1.4 }}>{id.sublabel}</div>
+                  </OptionCard>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2 — Pain points (buttons in action bar) */}
+          {step === 2 && identity && (
+            <div style={{ padding: '22px 28px 16px' }}>
+              <h3 style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
+                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '5px',
+              }}>
+                {step2Titles[identity]}
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '4px' }}>
+                Pick up to two that feel most pressing right now.
+              </p>
+              <p style={{
+                fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
+                color: 'var(--text-dim)', marginBottom: '14px',
+              }}>
+                {pains.length} of {MAX_PAIN} selected
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                {painList.map((opt, i) => (
+                  <OptionCard key={i} selected={pains.includes(i)} onClick={() => togglePain(i)}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                      <div style={{
+                        width: '16px', height: '16px', flexShrink: 0, marginTop: '2px',
+                        border: `1px solid ${pains.includes(i) ? 'var(--copper)' : 'hsl(217 12% 38%)'}`,
+                        borderRadius: '4px',
+                        background: pains.includes(i) ? 'var(--copper)' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'border-color 120ms ease, background 120ms ease',
+                      }}>
+                        {pains.includes(i) && (
+                          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                            <path d="M1.5 5l2.5 2.5 4.5-5" stroke="hsl(217,24%,8%)" strokeWidth="1.6"
+                              strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)', lineHeight: 1.35 }}>{opt.main}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.5 }}>{opt.desc}</div>
+                      </div>
+                    </div>
+                  </OptionCard>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — Contact (buttons in action bar) */}
+          {step === 3 && (
+            <div style={{ padding: '22px 28px 16px' }}>
+              <h3 style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: 'clamp(15px, 2vw, 18px)', fontWeight: 700,
+                letterSpacing: '-0.3px', color: 'var(--text)', marginBottom: '5px',
+              }}>
+                A bit about you
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '18px' }}>
+                So we can keep you in the loop as we build.
+              </p>
+              <Input label="Full name"    type="text"  placeholder="Your name"
+                value={form.name}         onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
+              <Input label="Work email"   type="email" placeholder="name@company.com"
+                value={form.email}        onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
+              <Input label="Phone number" type="tel"   placeholder="+91 98765 43210"
+                value={form.phone}        onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
+              <Input label="Organisation" type="text"  placeholder="Company or institution"
+                value={form.organisation} onChange={(e) => setForm(f => ({ ...f, organisation: e.target.value }))} />
+            </div>
+          )}
+
+          {/* Step 4 — Thank you (full content, no action bar) */}
+          {step === 4 && (
+            <div className="card-center-content" style={{ padding: '44px 32px' }}>
+              <div style={{
+                width: '56px', height: '56px',
+                background: 'hsl(25 85% 58% / 0.1)',
+                border: '1px solid hsl(25 85% 58% / 0.22)',
+                borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 20px',
+              }}>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <path d="M4 11l5 5 9-9" stroke="var(--copper)" strokeWidth="1.5"
+                    strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3 style={{
+                fontFamily: "'Space Grotesk', sans-serif", fontSize: '22px',
+                fontWeight: 700, letterSpacing: '-0.5px', color: 'var(--text)', marginBottom: '10px',
+              }}>
+                {isDuplicate ? 'Already on the list' : 'Thank you'}
+              </h3>
+              <p style={{
+                fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.75,
+                maxWidth: '300px', margin: '0 auto 20px',
+              }}>
+                {isDuplicate
+                  ? "We already have your details on record. We'll reach out when TIQ World launches."
+                  : "We've noted what matters to you. TIQ World is being built for people exactly like you — we'll be in touch."}
+              </p>
+              <div style={{ height: '1px', background: 'var(--border-color)', maxWidth: '80px', margin: '0 auto 12px' }} />
+              <p style={{
+                fontFamily: "'JetBrains Mono', monospace", fontSize: '11px',
+                color: 'var(--text-dim)', letterSpacing: '0.5px', marginBottom: '24px',
+              }}>
+                tiqworld.com
+              </p>
+              {!viewOpen ? (
+                <button
+                  onClick={handleViewData}
+                  style={{
+                    width: '100%', height: '44px', background: 'transparent',
+                    border: '1px solid var(--border-color)', borderRadius: '10px',
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontSize: '14px', fontWeight: 500,
+                    color: 'var(--text-muted)', cursor: 'pointer',
+                    transition: 'border-color 150ms ease, color 150ms ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'hsl(217 14% 40%)'; e.currentTarget.style.color = 'var(--text)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                  View my data
+                </button>
+              ) : (
+                <div style={{ textAlign: 'left' }}>
+                  {viewStatus === 'loading' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div className="skeleton" style={{ height: '16px', width: '60%' }} />
+                      <div className="skeleton" style={{ height: '14px', width: '80%' }} />
+                      <div className="skeleton" style={{ height: '14px', width: '50%' }} />
+                    </div>
+                  )}
+                  {viewStatus === 'not_found' && (
+                    <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', padding: '12px 0' }}>
+                      No entry found for this email.
+                    </p>
+                  )}
+                  {viewStatus === 'error' && (
+                    <p style={{ textAlign: 'center', fontSize: '13px', color: 'hsl(0,72%,56%)', padding: '12px 0' }}>
+                      Could not fetch. Is the server running?
+                    </p>
+                  )}
+                  {viewStatus === 'found' && entry && (
+                    <div className="slide-up" style={{
+                      background: 'hsl(217 18% 18%)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '10px', overflow: 'hidden',
+                    }}>
+                      <div style={{ padding: '18px 20px' }}>
+                        <p style={{
+                          fontFamily: "'JetBrains Mono', monospace", fontSize: '10px',
+                          letterSpacing: '1.5px', textTransform: 'uppercase',
+                          color: 'var(--copper)', marginBottom: '14px',
+                        }}>
+                          Your latest entry
+                        </p>
+                        <div style={{ marginBottom: '12px' }}>
+                          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '3px' }}>Email</p>
+                          <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{entry.email}</p>
+                        </div>
+                        <div style={{ height: '1px', background: 'var(--border-color)', margin: '12px 0' }} />
+                        <div>
+                          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '3px' }}>Submitted</p>
+                          <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', color: 'var(--text-muted)' }}>{fmt(entry.created_at)}</p>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)', lineHeight: 1.35 }}>{opt.main}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.5 }}>{opt.desc}</div>
-                </div>
-              </div>
-            </OptionCard>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <Button variant="outline" onClick={() => goToStep(1)}>Back</Button>
-          <Button variant="primary" disabled={pains.length === 0} onClick={() => goToStep(3)} style={{ flex: 1 }}>Continue</Button>
-        </div>
-      </div>
-    )
-
-    /* STEP 3 — Contact */
-    if (step === 3) return (
-      <div style={{ padding: '24px 28px' }}>
-        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(16px,2vw,19px)', fontWeight: 700, letterSpacing: '-0.4px', color: 'var(--text)', marginBottom: '6px' }}>
-          A bit about you
-        </h2>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: '18px' }}>
-          So we can keep you in the loop as we build.
-        </p>
-        <Input label="Full name"    type="text"  placeholder="Your name"              value={form.name}         onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
-        <Input label="Work email"   type="email" placeholder="name@company.com"       value={form.email}        onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
-        <Input label="Phone number" type="tel"   placeholder="+91 98765 43210"        value={form.phone}        onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
-        <Input label="Organisation" type="text"  placeholder="Company or institution" value={form.organisation} onChange={(e) => setForm(f => ({ ...f, organisation: e.target.value }))} />
-        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-          <Button variant="outline" onClick={() => goToStep(2)}>Back</Button>
-          <Button variant="primary" disabled={!contactValid || submitting} onClick={handleSubmit} style={{ flex: 1 }}>
-            {submitting ? <><span className="spinner" />&nbsp;Submitting…</> : 'Submit'}
-          </Button>
-        </div>
-      </div>
-    )
-
-    /* STEP 4 — Thank you */
-    if (step === 4) return (
-      <div style={{ padding: '40px 28px', textAlign: 'center' }}>
-        <div style={{
-          width: '54px', height: '54px',
-          border: '1.5px solid var(--copper)', borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 20px', position: 'relative',
-        }}>
-          <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
-            <path d="M4 11l5 5 9-9" stroke="var(--copper)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <div style={{
-            position: 'absolute', inset: '-6px',
-            border: '1px solid var(--copper)', borderRadius: '50%', opacity: 0,
-            animation: 'pingSlow 2s cubic-bezier(0,0,0.2,1) 0.3s infinite',
-          }} />
-        </div>
-        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '22px', fontWeight: 700, letterSpacing: '-0.5px', color: 'var(--text)', marginBottom: '10px' }}>
-          Thank you
-        </h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.75, maxWidth: '300px', margin: '0 auto 20px' }}>
-          We've noted what matters to you. TIQ World is being built for people exactly like you — we'll be in touch.
-        </p>
-        <div style={{ height: '1px', background: 'var(--border-color)', maxWidth: '80px', margin: '0 auto 12px' }} />
-        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '0.5px', marginBottom: '24px' }}>
-          tiqworld.com
-        </p>
-
-        {!viewOpen ? (
-          <button
-            onClick={handleViewData}
-            style={{
-              width: '100%', height: '44px', background: 'transparent',
-              border: '1px solid var(--border-color)', borderRadius: 'var(--radius)',
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: '14px', fontWeight: 500,
-              color: 'var(--text-muted)', cursor: 'pointer',
-              transition: 'border-color var(--t-base), color var(--t-base)',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--copper)'; e.currentTarget.style.color = 'var(--text)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-muted)' }}
-          >
-            View my data
-          </button>
-        ) : (
-          <div className="slide-up" style={{ textAlign: 'left' }}>
-            {viewStatus === 'loading' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div className="skeleton" style={{ height: '16px', width: '60%' }} />
-                <div className="skeleton" style={{ height: '14px', width: '80%' }} />
-                <div className="skeleton" style={{ height: '14px', width: '50%' }} />
-              </div>
-            )}
-            {viewStatus === 'not_found' && (
-              <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', padding: '12px 0' }}>No entry found for this email.</p>
-            )}
-            {viewStatus === 'error' && (
-              <p style={{ textAlign: 'center', fontSize: '13px', color: 'hsl(0,72%,56%)', padding: '12px 0' }}>Could not fetch. Is the server running?</p>
-            )}
-            {viewStatus === 'found' && entry && (
-              <div style={{ background: 'var(--surface-2)', border: '1px solid hsl(25 85% 58% / 0.35)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-                <div style={{ height: '2px', background: 'linear-gradient(90deg, var(--copper), var(--teal))' }} />
-                <div style={{ padding: '18px 20px' }}>
-                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)', marginBottom: '14px' }}>Your latest entry</p>
-                  <div style={{ marginBottom: '12px' }}>
-                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '3px' }}>Email</p>
-                    <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{entry.email}</p>
-                  </div>
-                  <div style={{ height: '1px', background: 'var(--border-color)', margin: '12px 0' }} />
-                  <div>
-                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '3px' }}>Submitted</p>
-                    <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', color: 'var(--text-muted)' }}>{fmt(entry.created_at)}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    )
-
-    return null
-  }
-
-  /* ── Floating card wrapper ── */
-  return (
-    <div style={{
-      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '28px 32px',
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: step === 1 ? '540px' : '440px',
-        background: 'var(--surface)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--radius)',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.35), 0 0 0 1px hsl(25 85% 58% / 0.05)',
-        overflow: 'hidden',
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(12px)',
-        transition: 'opacity 0.22s cubic-bezier(0.4,0,0.2,1), transform 0.22s cubic-bezier(0.4,0,0.2,1), max-width 0.25s ease',
-      }}>
-        {/* Top copper→teal accent line */}
-        <div style={{ height: '3px', background: 'linear-gradient(90deg, var(--copper), var(--teal))' }} />
-
-        {/* Progress bar — steps 1–3 */}
-        {step > 0 && step < 4 && (
-          <>
-            <div style={{ height: '2px', background: 'var(--surface-3)', overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', width: progressWidth[step],
-                background: 'linear-gradient(90deg, var(--copper), var(--teal))',
-                transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
-              }} />
+              )}
             </div>
-            <div style={{
-              padding: '10px 28px',
-              borderBottom: '1px solid var(--border-color)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--copper)' }}>
-                Step {step} of 3
-              </span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '10px', color: 'var(--text-dim)' }}>
-                {step === 1 ? 'Identity' : step === 2 ? 'Challenges' : 'Details'}
-              </span>
-            </div>
-          </>
-        )}
+          )}
 
-        <StepContent />
-      </div>
+        </div>
+      ]}
+
+      {/* ── Sticky action bar — OUTSIDE the animated wrapper, steps 0-3 only ──
+          Always visible at the card bottom, never scrolls away. */}
+      {step < 4 && (
+        <div className="card-action-bar">
+
+          {/* Step 0 */}
+          {step === 0 && (
+            <Button
+              variant="primary"
+              onClick={() => goTo(1)}
+              style={{ width: '100%', height: '48px', fontSize: '15px', fontWeight: 600 }}
+            >
+              Begin Survey
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5"
+                  strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Button>
+          )}
+
+          {/* Step 1 */}
+          {step === 1 && (
+            <Button variant="primary" disabled={!identity} onClick={() => goTo(2)} style={{ width: '100%' }}>
+              Continue
+            </Button>
+          )}
+
+          {/* Step 2 */}
+          {step === 2 && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button variant="outline" onClick={() => goTo(1)}>Back</Button>
+              <Button variant="primary" disabled={pains.length === 0} onClick={() => goTo(3)} style={{ flex: 1 }}>
+                Continue
+              </Button>
+            </div>
+          )}
+
+          {/* Step 3 */}
+          {step === 3 && (
+            <>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button variant="outline" onClick={() => goTo(2)}>Back</Button>
+                <Button variant="primary" disabled={!contactValid || submitting} onClick={handleSubmit} style={{ flex: 1 }}>
+                  {submitting ? <><span className="spinner" />&nbsp;Submitting…</> : 'Submit'}
+                </Button>
+              </div>
+              <p style={{
+                fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center',
+                marginTop: '10px', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.2px',
+              }}>
+                Your data is private — never shared or sold.
+              </p>
+            </>
+          )}
+
+        </div>
+      )}
+
     </div>
   )
 }
@@ -394,30 +526,20 @@ function RightPanel() {
    LANDING PAGE
 ══════════════════════════════════════ */
 export default function Landing() {
-  const [isTablet, setIsTablet] = useState(false)
-
-  useEffect(() => {
-    const check = () => setIsTablet(window.innerWidth <= 900)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
   return (
     <div className="page-shell">
 
-      {/* ── FLOATING NAV (tiq_workplace style) ── */}
+      {/* ── NAV ── */}
       <header className="app-nav-header">
         <div className="app-nav-pill">
-          {/* Top accent gradient line */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-            background: 'linear-gradient(90deg, transparent, hsl(25 85% 58% / 0.45), transparent)',
+            background: 'var(--border-color)',
           }} />
           <Logo />
           <span style={{
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: '11px', color: 'var(--copper)',
+            fontSize: '11px', color: 'var(--text-dim)',
             letterSpacing: '1px', textTransform: 'uppercase',
           }}>
             survey.tiqworld.com
@@ -428,85 +550,82 @@ export default function Landing() {
       {/* ── SPLIT LAYOUT ── */}
       <div className="split-layout">
 
-        {/* ── LEFT — fixed info panel ── */}
+        {/* ── LEFT — hero ── */}
         <div className="panel-left">
-          <div className="blueprint-grid" style={{ position: 'absolute', inset: 0, zIndex: 0 }} />
-          <div style={{
-            position: 'absolute', inset: 0, zIndex: 1,
-            background: 'radial-gradient(ellipse 80% 80% at 20% 50%, transparent 10%, var(--bg) 80%)',
-          }} />
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: '420px' }}>
 
-          <div style={{ position: 'relative', zIndex: 2, maxWidth: '460px' }}>
             {/* Badge */}
-            <div className="anim-up" style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '5px 14px',
-              background: 'hsl(25 85% 58% / 0.1)',
-              border: '1px solid hsl(25 85% 58% / 0.3)',
-              borderRadius: '100px', marginBottom: isTablet ? '16px' : '24px',
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '3px 10px',
+              background: 'hsl(25 85% 58% / 0.07)',
+              border: '1px solid hsl(25 85% 58% / 0.18)',
+              borderRadius: '100px',
+              marginBottom: '16px',
             }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--copper)', flexShrink: 0 }} />
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--copper)', flexShrink: 0 }} />
               <span style={{
                 fontFamily: "'JetBrains Mono', monospace",
-                fontSize: '11px', fontWeight: 500,
-                color: 'var(--copper)', letterSpacing: '1px',
-                textTransform: 'uppercase',
+                fontSize: '10px', fontWeight: 500,
+                color: 'var(--copper)', letterSpacing: '1.5px', textTransform: 'uppercase',
               }}>
-                Interest Survey
+                Interest Survey · 2026
               </span>
             </div>
 
             {/* Headline */}
             <h1
-              className="anim-up-d1 hero-headline"
+              className="hero-headline"
               style={{
                 fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: isTablet ? 'clamp(28px,5vw,42px)' : 'clamp(36px,4vw,56px)',
-                fontWeight: 700, lineHeight: 1,
-                letterSpacing: '-0.03em', textTransform: 'uppercase',
-                color: 'var(--text)',
-                marginBottom: isTablet ? '12px' : '18px',
+                fontWeight: 800, lineHeight: 1.05,
+                letterSpacing: '-0.04em', textTransform: 'uppercase',
+                color: 'var(--text)', marginBottom: '12px',
               }}
             >
-              Tell us<br />who you<br />
-              <span style={{ color: 'var(--copper)' }}>are.</span>
+              Shape the<br />
+              <span style={{ color: 'var(--copper)' }}>future</span> of<br />
+              inspection.
             </h1>
 
-            <p className="anim-up-d2" style={{
-              fontSize: isTablet ? '13px' : '15px',
-              color: 'var(--text-muted)', lineHeight: 1.75,
-              maxWidth: '360px',
-              marginBottom: isTablet ? '20px' : '36px',
+            {/* Lead */}
+            <p style={{
+              fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.65,
+              maxWidth: '360px', marginBottom: '20px', letterSpacing: '-0.01em',
             }}>
-              We're building TIQ World around what actually matters to people in inspection, NDT, and QA.
+              Built for NDT, QA, and inspection professionals. Your input shapes every feature we build.
             </p>
 
-            {!isTablet && (
-              <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '28px', maxWidth: '340px' }} />
-            )}
+            <div style={{ height: '1px', background: 'var(--border-color)', marginBottom: '20px', maxWidth: '300px' }} />
 
             {/* How it works */}
-            <div className="anim-up-d3 left-how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              {howItWorks.map((s) => (
-                <div key={s.num} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                  <span style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: '11px', fontWeight: 600,
-                    color: 'var(--border-color)', minWidth: '22px', marginTop: '2px',
+            <div className="left-how-it-works" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {howItWorks.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div style={{
+                    width: '30px', height: '30px', flexShrink: 0,
+                    border: '1px solid var(--border-color)', borderRadius: '8px',
+                    background: 'hsl(217 18% 14%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    {s.num}
-                  </span>
-                  <div>
-                    <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', marginBottom: '2px' }}>{s.title}</p>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>{s.desc}</p>
+                    <span style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: '10px', fontWeight: 600, color: 'var(--text-dim)',
+                    }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
                   </div>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.2px' }}>
+                    {s.title}
+                  </p>
                 </div>
               ))}
             </div>
+
           </div>
         </div>
 
-        {/* ── RIGHT — floating survey card ── */}
+        {/* ── RIGHT — survey card ── */}
         <div className="panel-right">
           <RightPanel />
         </div>

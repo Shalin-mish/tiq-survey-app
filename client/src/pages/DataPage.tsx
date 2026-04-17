@@ -27,6 +27,33 @@ const identityLabel: Record<string, string> = {
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
+function exportCSV(responses: Response[]) {
+  const headers = ['ID', 'Name', 'Email', 'Phone', 'Organisation', 'Identity', 'Challenge 1', 'Challenge 2', 'Submitted']
+  const rows = responses.map(r => [
+    r.id,
+    r.name,
+    r.email,
+    r.phone,
+    r.organisation,
+    identityLabel[r.identity] ?? r.identity,
+    r.pain_1,
+    r.pain_2 || '',
+    fmt(r.created_at),
+  ])
+  const csv = [headers, ...rows]
+    .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `tiqworld-survey-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 /* ── Admin data view ── */
 function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
   const [responses, setResponses]   = useState<Response[]>([])
@@ -81,6 +108,9 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
           </h2>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <Button variant="outline" onClick={() => exportCSV(responses)} style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}>
+            Export CSV
+          </Button>
           <Button variant="outline" onClick={loadData} style={{ height: '36px', padding: '0 16px', fontSize: '13px' }}>
             Refresh
           </Button>

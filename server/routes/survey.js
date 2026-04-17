@@ -1,16 +1,15 @@
 const express = require('express')
-const crypto  = require('crypto')
+const jwt     = require('jsonwebtoken')
 const router  = express.Router()
 const pool    = require('../db/pool')
 
-/* ── Active admin sessions (in-memory, cleared on restart) ── */
-const activeSessions = new Set()
+const JWT_SECRET = process.env.JWT_SECRET || 'tiqworld_dev_secret_change_in_prod'
 
 /* ════════════════════════════════
    PUBLIC ROUTES
 ════════════════════════════════ */
 
-// POST /api/submit — save survey response
+// POST /api/submit — save survey response (blocks duplicate emails)
 router.post('/submit', async (req, res) => {
   const { identity, pain_1, pain_2, name, email, phone, organisation } = req.body
 
@@ -19,6 +18,15 @@ router.post('/submit', async (req, res) => {
   }
 
   try {
+    // Duplicate guard — same email can only submit once
+    const existing = await pool.query(
+      'SELECT id FROM survey_responses WHERE LOWER(email) = LOWER($1) LIMIT 1',
+      [email]
+    )
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Email already submitted' })
+    }
+
     await pool.query(
       `INSERT INTO survey_responses (identity, pain_1, pain_2, name, email, phone, organisation)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -31,7 +39,7 @@ router.post('/submit', async (req, res) => {
   }
 })
 
-// GET /api/view?email=... — return latest entry for that email (email + timestamp only)
+// GET /api/view?email=... — return latest entry for that email
 router.get('/view', async (req, res) => {
   const { email } = req.query
   if (!email) return res.status(400).json({ error: 'Email required' })
@@ -57,7 +65,7 @@ router.get('/view', async (req, res) => {
    ADMIN ROUTES
 ════════════════════════════════ */
 
-// POST /api/admin/login — validate credentials from .env
+// POST /api/admin/login — validate .env credentials, return signed JWT
 router.post('/admin/login', (req, res) => {
   const { email, password } = req.body
 
@@ -75,25 +83,24 @@ router.post('/admin/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' })
   }
 
-  // Generate session token
-  const token = crypto.randomUUID()
-  activeSessions.add(token)
-
-  // Auto-expire token after 8 hours
-  setTimeout(() => activeSessions.delete(token), 8 * 60 * 60 * 1000)
-
+  // Sign JWT — expires in 8 hours, survives server restarts
+  const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '8h' })
   res.json({ token })
 })
 
-// Middleware — verify admin token
+// Middleware — verify JWT on protected routes
 function requireAdmin(req, res, next) {
-  const auth = req.headers.authorization || ''
+  const auth  = req.headers.authorization || ''
   const token = auth.replace('Bearer ', '').trim()
 
-  if (!token || !activeSessions.has(token)) {
+  if (!token) return res.status(401).json({ error: 'Unauthorized' })
+
+  try {
+    jwt.verify(token, JWT_SECRET)
+    next()
+  } catch {
     return res.status(401).json({ error: 'Unauthorized' })
   }
-  next()
 }
 
 // GET /api/admin/responses — all survey responses (admin only)
@@ -111,10 +118,8 @@ router.get('/admin/responses', requireAdmin, async (req, res) => {
   }
 })
 
-// POST /api/admin/logout — invalidate token
+// POST /api/admin/logout — JWT is stateless; client discards token
 router.post('/admin/logout', requireAdmin, (req, res) => {
-  const token = req.headers.authorization.replace('Bearer ', '').trim()
-  activeSessions.delete(token)
   res.json({ message: 'Logged out' })
 })
 
