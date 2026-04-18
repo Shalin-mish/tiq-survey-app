@@ -345,4 +345,17 @@ body {
   .step-label { display: none; }
 }
 
-/* ── Short viewport (≤ 720px height) ── */
+/* ── Short viewport (≤ 600px height) — nav compact on any short screen ── */
+@media (max-height: 600px) {
+  .page-shell     { padding-top: 54px; }
+  .app-nav-header { padding: 5px 10px; }
+  .app-nav-pill   { padding: 6px 14px; }
+}
+
+/* ── Landscape phone (short height + narrow width) ── */
+/* Hide hero panel, show only the survey card */
+@media (max-height: 600px) and (max-width: 900px) {
+  .panel-left      { display: none; }
+  .panel-right     { padding: 12px 14px; min-height: auto; }
+  .card-action-bar { padding: 10px 18px 12px; }
+}
