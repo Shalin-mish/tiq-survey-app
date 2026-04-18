@@ -6,8 +6,13 @@ const { v4: uuidv4 } = require('uuid')
 const router    = express.Router()
 const pool      = require('../db/pool')
 
+const IS_PROD = process.env.NODE_ENV === 'production'
+
+// [BLOCKER FIX] Throw at startup if JWT_SECRET missing in production
+if (IS_PROD && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not set in production.')
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'tiqworld_dev_secret_change_in_prod'
-const IS_PROD    = process.env.NODE_ENV === 'production'
 
 /* ════════════════════════════════
    RATE LIMITER — login only
@@ -107,11 +112,14 @@ router.post('/admin/login', loginLimiter, async (req, res) => {
     const jti   = uuidv4()
     const token = jwt.sign({ admin: true, jti }, JWT_SECRET, { expiresIn: '15d' })
 
+    // CSRF risk acceptance: sameSite:'strict' prevents cross-origin cookie submission
+    // in all modern browsers. An explicit CSRF token would be defence-in-depth but
+    // is not implemented here given the single-admin, internal-tool threat model.
     res.cookie('admin_token', token, {
-      httpOnly: true,                        // JS se accessible nahi
-      secure: IS_PROD,                       // HTTPS only in production
+      httpOnly: true,
+      secure: IS_PROD,
       sameSite: 'strict',
-      maxAge: 15 * 24 * 60 * 60 * 1000,    // 15 days in ms
+      maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days in ms
     })
 
     res.json({ success: true })
@@ -127,9 +135,19 @@ async function requireAdmin(req, res, next) {
 
   if (!token) return res.status(401).json({ error: 'Unauthorized' })
 
+  let payload
   try {
-    const payload = jwt.verify(token, JWT_SECRET)
+    payload = jwt.verify(token, JWT_SECRET)
+  } catch {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
 
+  // [FIX] Reject pre-migration tokens that have no jti — they cannot be revoked
+  if (!payload.jti) {
+    return res.status(401).json({ error: 'Session expired. Please login again.' })
+  }
+
+  try {
     // Token blacklist check
     const revoked = await pool.query(
       'SELECT 1 FROM revoked_tokens WHERE jti = $1',
@@ -138,13 +156,21 @@ async function requireAdmin(req, res, next) {
     if (revoked.rows.length > 0) {
       return res.status(401).json({ error: 'Token revoked. Please login again.' })
     }
-
-    req.jti = payload.jti
-    next()
-  } catch {
-    return res.status(401).json({ error: 'Unauthorized' })
+  } catch (err) {
+    // [FIX] DB errors surfaced as 500, not silently swallowed as 401
+    console.error('requireAdmin DB error:', err.message)
+    return res.status(500).json({ error: 'Internal server error' })
   }
+
+  // [FIX] Store full admin context under req.admin (not loose req.jti)
+  req.admin = payload
+  next()
 }
+
+// GET /api/admin/verify — lightweight session check (no data payload)
+router.get('/admin/verify', requireAdmin, (req, res) => {
+  res.json({ ok: true })
+})
 
 // GET /api/admin/responses — all survey responses (admin only)
 router.get('/admin/responses', requireAdmin, async (req, res) => {
@@ -166,10 +192,12 @@ router.post('/admin/logout', requireAdmin, async (req, res) => {
   try {
     await pool.query(
       'INSERT INTO revoked_tokens (jti) VALUES ($1) ON CONFLICT DO NOTHING',
-      [req.jti]
+      [req.admin.jti]
     )
   } catch (err) {
     console.error('Logout revoke error:', err.message)
+    // [FIX] Tell client revocation failed so they can retry
+    return res.status(500).json({ error: 'Logout failed. Please try again.' })
   }
 
   res.clearCookie('admin_token', {

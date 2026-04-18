@@ -3,6 +3,8 @@ import Logo from '../components/Logo'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
+
 interface Response {
   id: number
   name: string
@@ -74,8 +76,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   async function loadData() {
     setLoading(true); setError('')
     try {
-      const res = await fetch('http://localhost:4000/api/admin/responses', {
-        credentials: 'include',  // cookie automatically jaati hai
+      const res = await fetch(`${API_URL}/api/admin/responses`, {
+        credentials: 'include',
       })
       if (res.status === 401) { onLogout(); return }
       if (!res.ok) throw new Error()
@@ -332,9 +334,9 @@ export default function DataPage() {
   const [loggedIn, setLoggedIn]   = useState(false)
   const [checking, setChecking]   = useState(true)
 
-  // On mount: verify if cookie session is still valid
+  // On mount: lightweight session check — no data payload transferred
   useEffect(() => {
-    fetch('http://localhost:4000/api/admin/responses', { credentials: 'include' })
+    fetch(`${API_URL}/api/admin/verify`, { credentials: 'include' })
       .then(r => { if (r.ok) setLoggedIn(true) })
       .finally(() => setChecking(false))
   }, [])
@@ -343,7 +345,7 @@ export default function DataPage() {
     if (!email || !password) return
     setLoading(true); setError('')
     try {
-      const res = await fetch('http://localhost:4000/api/admin/login', {
+      const res = await fetch(`${API_URL}/api/admin/login`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -359,10 +361,17 @@ export default function DataPage() {
   }
 
   async function handleLogout() {
-    await fetch('http://localhost:4000/api/admin/logout', {
-      method: 'POST',
-      credentials: 'include',
-    }).catch(() => {})
+    try {
+      const res = await fetch(`${API_URL}/api/admin/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (!res.ok) throw new Error('Server revocation failed')
+    } catch (err) {
+      // Log out locally regardless — warn that server-side token may still be active
+      console.warn('Logout warning:', err instanceof Error ? err.message : err)
+      console.warn('Token may remain valid server-side until expiry. Contact admin if needed.')
+    }
     setLoggedIn(false)
   }
 

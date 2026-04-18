@@ -4,6 +4,7 @@ const express      = require('express')
 const cors         = require('cors')
 const cookieParser = require('cookie-parser')
 const routes       = require('./routes/survey')
+const pool         = require('./db/pool')
 
 const app  = express()
 const PORT = process.env.PORT || 4000
@@ -46,3 +47,18 @@ app.listen(PORT, () => {
   console.log(`\n  Server running on http://localhost:${PORT}`)
   console.log(`  Health: http://localhost:${PORT}/health\n`)
 })
+
+// Cleanup expired revoked tokens every 24 hours (tokens expire after 15 days)
+const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000
+setInterval(async () => {
+  try {
+    const result = await pool.query(
+      "DELETE FROM revoked_tokens WHERE revoked_at < NOW() - INTERVAL '15 days'"
+    )
+    if (result.rowCount > 0) {
+      console.log(`  Cleaned up ${result.rowCount} expired revoked token(s)`)
+    }
+  } catch (err) {
+    console.error('Revoked token cleanup error:', err.message)
+  }
+}, CLEANUP_INTERVAL)
