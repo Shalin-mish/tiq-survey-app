@@ -73,7 +73,7 @@ function StepIndicator({ step }: { step: Step }) {
         {labels.map((label, i) => {
           const s = i + 1; const active = s === step; const done = s < step
           return (
-            <div key={s} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', position: 'relative', zIndex: 1 }}>
+            <div key={s} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', position: 'relative', zIndex: 1, width: '24px' }}>
               <div style={{
                 width: '24px', height: '24px', borderRadius: '50%',
                 border: `1.5px solid ${done || active ? 'var(--copper)' : 'hsl(217 14% 32%)'}`,
