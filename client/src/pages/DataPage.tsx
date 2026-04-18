@@ -61,7 +61,7 @@ const ctrlStyle: React.CSSProperties = {
 }
 
 /* ── Admin data view ── */
-function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [responses, setResponses] = useState<Response[]>([])
   const [loading, setLoading]     = useState(false)
   const [loaded, setLoaded]       = useState(false)
@@ -75,8 +75,9 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
     setLoading(true); setError('')
     try {
       const res = await fetch('http://localhost:4000/api/admin/responses', {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',  // cookie automatically jaati hai
       })
+      if (res.status === 401) { onLogout(); return }
       if (!res.ok) throw new Error()
       setResponses(await res.json())
       setLoaded(true)
@@ -324,11 +325,19 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
 
 /* ── Admin login ── */
 export default function DataPage() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
-  const [token, setToken]       = useState(() => localStorage.getItem('admin_token') || '')
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState('')
+  const [loggedIn, setLoggedIn]   = useState(false)
+  const [checking, setChecking]   = useState(true)
+
+  // On mount: verify if cookie session is still valid
+  useEffect(() => {
+    fetch('http://localhost:4000/api/admin/responses', { credentials: 'include' })
+      .then(r => { if (r.ok) setLoggedIn(true) })
+      .finally(() => setChecking(false))
+  }, [])
 
   async function handleLogin() {
     if (!email || !password) return
@@ -336,25 +345,30 @@ export default function DataPage() {
     try {
       const res = await fetch('http://localhost:4000/api/admin/login', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
       if (res.status === 401) { setError('Invalid credentials'); setLoading(false); return }
+      if (res.status === 429) { setError('Too many attempts. Try after 15 minutes.'); setLoading(false); return }
       if (!res.ok) throw new Error()
-      const { token: t } = await res.json()
-      localStorage.setItem('admin_token', t)
-      setToken(t)
+      setLoggedIn(true)
     } catch {
       setError('Server error. Is the backend running?')
     } finally { setLoading(false) }
   }
 
-  function handleLogout() {
-    localStorage.removeItem('admin_token')
-    setToken('')
+  async function handleLogout() {
+    await fetch('http://localhost:4000/api/admin/logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {})
+    setLoggedIn(false)
   }
 
-  if (token) return (
+  if (checking) return null
+
+  if (loggedIn) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <header className="app-nav-header">
         <div className="app-nav-pill">
@@ -365,7 +379,7 @@ export default function DataPage() {
         </div>
       </header>
       <div style={{ paddingTop: '70px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <AdminDashboard token={token} onLogout={handleLogout} />
+        <AdminDashboard onLogout={handleLogout} />
       </div>
     </div>
   )

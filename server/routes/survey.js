@@ -1,10 +1,25 @@
-const express  = require('express')
-const jwt      = require('jsonwebtoken')
-const bcrypt   = require('bcryptjs')
-const router   = express.Router()
-const pool     = require('../db/pool')
+const express   = require('express')
+const jwt       = require('jsonwebtoken')
+const bcrypt    = require('bcryptjs')
+const rateLimit = require('express-rate-limit')
+const { v4: uuidv4 } = require('uuid')
+const router    = express.Router()
+const pool      = require('../db/pool')
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tiqworld_dev_secret_change_in_prod'
+const IS_PROD    = process.env.NODE_ENV === 'production'
+
+/* ════════════════════════════════
+   RATE LIMITER — login only
+════════════════════════════════ */
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,                    // 5 attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts. Try again after 15 minutes.' },
+})
 
 /* ════════════════════════════════
    PUBLIC ROUTES
@@ -66,8 +81,8 @@ router.get('/view', async (req, res) => {
    ADMIN ROUTES
 ════════════════════════════════ */
 
-// POST /api/admin/login — validate credentials from DB, return signed JWT
-router.post('/admin/login', async (req, res) => {
+// POST /api/admin/login — validate credentials, set HttpOnly cookie
+router.post('/admin/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body
 
   if (!email || !password) {
@@ -89,23 +104,42 @@ router.post('/admin/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
-    const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '15d' })
-    res.json({ token })
+    const jti   = uuidv4()
+    const token = jwt.sign({ admin: true, jti }, JWT_SECRET, { expiresIn: '15d' })
+
+    res.cookie('admin_token', token, {
+      httpOnly: true,                        // JS se accessible nahi
+      secure: IS_PROD,                       // HTTPS only in production
+      sameSite: 'strict',
+      maxAge: 15 * 24 * 60 * 60 * 1000,    // 15 days in ms
+    })
+
+    res.json({ success: true })
   } catch (err) {
     console.error('Login error:', err.message)
     res.status(500).json({ error: 'Database error' })
   }
 })
 
-// Middleware — verify JWT on protected routes
-function requireAdmin(req, res, next) {
-  const auth  = req.headers.authorization || ''
-  const token = auth.replace('Bearer ', '').trim()
+// Middleware — verify cookie token + blacklist check
+async function requireAdmin(req, res, next) {
+  const token = req.cookies?.admin_token
 
   if (!token) return res.status(401).json({ error: 'Unauthorized' })
 
   try {
-    jwt.verify(token, JWT_SECRET)
+    const payload = jwt.verify(token, JWT_SECRET)
+
+    // Token blacklist check
+    const revoked = await pool.query(
+      'SELECT 1 FROM revoked_tokens WHERE jti = $1',
+      [payload.jti]
+    )
+    if (revoked.rows.length > 0) {
+      return res.status(401).json({ error: 'Token revoked. Please login again.' })
+    }
+
+    req.jti = payload.jti
     next()
   } catch {
     return res.status(401).json({ error: 'Unauthorized' })
@@ -127,8 +161,23 @@ router.get('/admin/responses', requireAdmin, async (req, res) => {
   }
 })
 
-// POST /api/admin/logout — JWT is stateless; client discards token
-router.post('/admin/logout', requireAdmin, (req, res) => {
+// POST /api/admin/logout — revoke token in DB + clear cookie
+router.post('/admin/logout', requireAdmin, async (req, res) => {
+  try {
+    await pool.query(
+      'INSERT INTO revoked_tokens (jti) VALUES ($1) ON CONFLICT DO NOTHING',
+      [req.jti]
+    )
+  } catch (err) {
+    console.error('Logout revoke error:', err.message)
+  }
+
+  res.clearCookie('admin_token', {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: 'strict',
+  })
+
   res.json({ message: 'Logged out' })
 })
 

@@ -1,8 +1,9 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 
-const express = require('express')
-const cors    = require('cors')
-const routes  = require('./routes/survey')
+const express      = require('express')
+const cors         = require('cors')
+const cookieParser = require('cookie-parser')
+const routes       = require('./routes/survey')
 
 const app  = express()
 const PORT = process.env.PORT || 4000
@@ -24,6 +25,7 @@ app.use(cors({
 }))
 
 app.use(express.json())
+app.use(cookieParser())
 
 // Health check
 app.get('/health', (_, res) => res.json({ status: 'ok', time: new Date().toISOString() }))
