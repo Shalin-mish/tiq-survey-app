@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react'
+import { useState } from 'react'
 import Logo from '../components/Logo'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -64,7 +64,7 @@ function StepIndicator({ step }: { step: Step }) {
       */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Absolute line layer */}
-        <div style={{ position: 'absolute', top: '11px', left: '12px', right: '12px', display: 'flex', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: '11px', left: '24px', right: '24px', display: 'flex', pointerEvents: 'none' }}>
           <div style={{ flex: 1, height: '1px', background: step > 1 ? 'var(--copper)' : 'hsl(217 14% 28%)', opacity: step > 1 ? 0.6 : 0.35, transition: 'background 0.3s ease' }} />
           <div style={{ width: '24px' }} />
           <div style={{ flex: 1, height: '1px', background: step > 2 ? 'var(--copper)' : 'hsl(217 14% 28%)', opacity: step > 2 ? 0.6 : 0.35, transition: 'background 0.3s ease' }} />
@@ -391,7 +391,7 @@ function RightPanel() {
               }}>
                 {isDuplicate
                   ? "We already have your details on record. We'll reach out when TIQ World launches."
-                  : "We've noted what matters to you. TIQ World is being built for people exactly like you — we'll be in touch."}
+                  : "We've noted what matters to you. TIQ World is being built for people exactly like you. We'll be in touch."}
               </p>
               <div style={{ height: '1px', background: 'var(--border-color)', maxWidth: '80px', margin: '0 auto 12px' }} />
               <p style={{

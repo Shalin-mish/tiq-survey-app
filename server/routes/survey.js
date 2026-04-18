@@ -1,7 +1,8 @@
-const express = require('express')
-const jwt     = require('jsonwebtoken')
-const router  = express.Router()
-const pool    = require('../db/pool')
+const express  = require('express')
+const jwt      = require('jsonwebtoken')
+const bcrypt   = require('bcryptjs')
+const router   = express.Router()
+const pool     = require('../db/pool')
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tiqworld_dev_secret_change_in_prod'
 
@@ -65,27 +66,35 @@ router.get('/view', async (req, res) => {
    ADMIN ROUTES
 ════════════════════════════════ */
 
-// POST /api/admin/login — validate .env credentials, return signed JWT
-router.post('/admin/login', (req, res) => {
+// POST /api/admin/login — validate credentials from DB, return signed JWT
+router.post('/admin/login', async (req, res) => {
   const { email, password } = req.body
-
-  const adminEmail    = process.env.ADMIN_EMAIL    || ''
-  const adminPassword = process.env.ADMIN_PASSWORD || ''
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' })
   }
 
-  const emailMatch    = email.toLowerCase().trim() === adminEmail.toLowerCase().trim()
-  const passwordMatch = password === adminPassword
+  try {
+    const result = await pool.query(
+      'SELECT password_hash FROM admin_users WHERE LOWER(email) = LOWER($1) LIMIT 1',
+      [email.trim()]
+    )
 
-  if (!emailMatch || !passwordMatch) {
-    return res.status(401).json({ error: 'Invalid credentials' })
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    const valid = await bcrypt.compare(password, result.rows[0].password_hash)
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '15d' })
+    res.json({ token })
+  } catch (err) {
+    console.error('Login error:', err.message)
+    res.status(500).json({ error: 'Database error' })
   }
-
-  // Sign JWT — expires in 8 hours, survives server restarts
-  const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '15d' })
-  res.json({ token })
 })
 
 // Middleware — verify JWT on protected routes
